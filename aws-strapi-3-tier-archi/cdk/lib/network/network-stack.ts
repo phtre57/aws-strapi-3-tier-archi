@@ -11,22 +11,19 @@ export class NetworkStack extends cdk.Stack {
 
     // Create the compute VPC
     const computeVpc = new ec2.Vpc(this, 'ComputeVpc', {
-      cidr: '10.0.0.0/16',
+      ipAddresses: ec2.IpAddresses.cidr('10.0.0.0/24'),
       maxAzs: 3,
       natGateways: 0,
       subnetConfiguration: [
         {
-          cidrMask: 24,
           name: 'public-subnet',
           subnetType: ec2.SubnetType.PUBLIC,
         },
         {
-          cidrMask: 24,
           name: 'private-subnet',
           subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
         },
         {
-          cidrMask: 24,
           name: 'isolated-subnet',
           subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
         },
@@ -37,22 +34,19 @@ export class NetworkStack extends cdk.Stack {
 
     // Create the database VPC
     const databaseVpc = new ec2.Vpc(this, 'DatabaseVpc', {
-      cidr: '10.1.0.0/16',
+      ipAddresses: ec2.IpAddresses.cidr('10.1.0.0/24'),
       maxAzs: 3,
       natGateways: 0,
       subnetConfiguration: [
         {
-          cidrMask: 24,
           name: 'public-subnet',
           subnetType: ec2.SubnetType.PUBLIC,
         },
         {
-          cidrMask: 24,
           name: 'private-subnet',
           subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
         },
         {
-          cidrMask: 24,
           name: 'isolated-subnet',
           subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
         },
@@ -65,18 +59,34 @@ export class NetworkStack extends cdk.Stack {
     const transitGateway = new tgw.CfnTransitGateway(this, 'TransitGateway');
 
     // Attach the compute VPC to the Transit Gateway
-    new tgw.CfnTransitGatewayAttachment(this, 'ComputeVpcAttachment', {
+    const computeTgwAttachment = new tgw.CfnTransitGatewayAttachment(this, 'ComputeVpcAttachment', {
       transitGatewayId: transitGateway.ref,
       vpcId: computeVpc.vpcId,
-      subnetIds: computeVpc.selectSubnets({ subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS }).subnetIds,
+      subnetIds: computeVpc.privateSubnets.map((subnet) => subnet.subnetId),
     });
 
     // Attach the database VPC to the Transit Gateway
-    new tgw.CfnTransitGatewayAttachment(this, 'DatabaseVpcAttachment', {
+    const dbTgwAttachment = new tgw.CfnTransitGatewayAttachment(this, 'DatabaseVpcAttachment', {
       transitGatewayId: transitGateway.ref,
       vpcId: databaseVpc.vpcId,
-      subnetIds: databaseVpc.selectSubnets({ subnetType: ec2.SubnetType.PRIVATE_ISOLATED }).subnetIds,
+      subnetIds: databaseVpc.privateSubnets.map((subnet) => subnet.subnetId),
     });
+
+    computeVpc.publicSubnets.forEach((subnet, index) => {
+        new ec2.CfnRoute(this, `ComputeVpcRoute-${index}`, {
+          routeTableId: subnet.routeTable.routeTableId,
+          destinationCidrBlock: databaseVpc.vpcCidrBlock,
+          transitGatewayId: transitGateway.ref
+      }).node.addDependency(computeTgwAttachment);
+    })
+
+    databaseVpc.publicSubnets.forEach((subnet, index) => {
+      new ec2.CfnRoute(this, `DbVpcRoute-${index}`, {
+        routeTableId: subnet.routeTable.routeTableId,
+        destinationCidrBlock: computeVpc.vpcCidrBlock,
+        transitGatewayId: transitGateway.ref
+    }).node.addDependency(dbTgwAttachment);
+  })
 
     // Add VPC Endpoint for S3 to the compute VPC
     computeVpc.addGatewayEndpoint('S3Endpoint', {
@@ -88,41 +98,31 @@ export class NetworkStack extends cdk.Stack {
       ],
     });
 
+
+    // Add Bastion Host to Compute VPC
+    this.createBastionHost(this, 'compute', computeVpc, ec2.SubnetType.PUBLIC);
+    this.createBastionHost(this, 'db', databaseVpc, ec2.SubnetType.PUBLIC);
+  }
+
+  private createBastionHost(scope: Construct, name: string, vpc: ec2.IVpc, subnetType: ec2.SubnetType): ec2.BastionHostLinux {
     // Add Bastion Host to Compute VPC
     // Create a security group for the bastion hosts
-    const bastionSecurityGroup = new ec2.SecurityGroup(this, 'BastionSecurityGroup', {
-      vpc: computeVpc,
+    const bastionSecurityGroup = new ec2.SecurityGroup(this, `${name}-BastionSecurityGroup`, {
+      vpc: vpc,
       allowAllOutbound: true,
       description: 'Security group for bastion hosts',
     });
 
-    // Allow SSH access from anywhere
-    bastionSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(22), 'Allow SSH access from anywhere');
-
     // Add additional ingress rules
-    bastionSecurityGroup.addIngressRule(ec2.Peer.ipv4('10.0.0.0/8'), ec2.Port.tcp(80));
-    bastionSecurityGroup.addIngressRule(ec2.Peer.ipv4('172.16.0.0/12'), ec2.Port.tcp(80));
-    bastionSecurityGroup.addIngressRule(ec2.Peer.ipv4('192.168.0.0/16'), ec2.Port.tcp(80));
-    bastionSecurityGroup.addIngressRule(ec2.Peer.ipv4('10.0.0.0/8'), ec2.Port.allIcmp());
-    bastionSecurityGroup.addIngressRule(ec2.Peer.ipv4('172.16.0.0/12'), ec2.Port.allIcmp());
-    bastionSecurityGroup.addIngressRule(ec2.Peer.ipv4('192.168.0.0/16'), ec2.Port.allIcmp());
+    bastionSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(22));
+    bastionSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.allIcmp());
 
-    // Add Bastion Host to Compute VPC
-    const computeBastion = new ec2.BastionHostLinux(this, 'ComputeBastionHost', {
-      vpc: computeVpc,
+    return new ec2.BastionHostLinux(scope, `${name}-BastionHost`, {
+      instanceName: `${name}-BastionHost`,
+      vpc: vpc,
       instanceType: new ec2.InstanceType('t4g.nano'),
-      subnetSelection: computeVpc.selectSubnets({ subnetType: ec2.SubnetType.PUBLIC }),
+      subnetSelection: vpc.selectSubnets({ subnetType: subnetType }),
       securityGroup: bastionSecurityGroup,
     });
-    cdk.Tags.of(computeBastion).add('Service', 'bastion');
-
-    // Add Bastion Host to Database VPC
-    const databaseBastion = new ec2.BastionHostLinux(this, 'DatabaseBastionHost', {
-      vpc: databaseVpc,
-      instanceType: new ec2.InstanceType('t4g.nano'),
-      subnetSelection: databaseVpc.selectSubnets({ subnetType: ec2.SubnetType.PUBLIC }),
-      securityGroup: bastionSecurityGroup,
-    });
-    cdk.Tags.of(databaseBastion).add('Service', 'bastion');
   }
 }

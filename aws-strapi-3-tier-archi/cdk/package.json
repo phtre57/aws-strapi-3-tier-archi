@@ -17,7 +17,7 @@
     "cdk": "cdk",
     "diff": "aws-vault exec hackathon -- cdk diff -c envName=dev",
     "synth": "cdk synth --quiet -c envName=dev -c analyze=Health",
-    "deploy:": "aws-vault exec hackathon -- cdk deploy '*' -c envName=dev --concurrency 8",
+    "deploy": "aws-vault exec hackathon -- cdk deploy '*' -c envName=dev --concurrency 8",
     "deploy:ci": "cdk deploy '*' -c envName=dev --require-approval never --concurrency 8"
   },
   "devDependencies": {

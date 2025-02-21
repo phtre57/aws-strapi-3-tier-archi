@@ -8,6 +8,8 @@ import { NetworkStack } from '~/lib/network'
 import { enumFromStringValueOrThrow } from '~/lib/utils'
 import { IBaseStackProps } from '~/lib/utils/base-stack-props'
 
+const appName = 'Strapi3Tier'
+
 const app = new cdk.App()
 const rawEnvName = app.node.tryGetContext('envName')
 if (!rawEnvName) {
@@ -31,4 +33,4 @@ const props: IBaseStackProps = {
   envConfig: envConfig,
 }
 
-const networkStack = new NetworkStack(app, 'NetworkStack', {...props})
+const networkStack = new NetworkStack(app, `${appName}-NetworkStack`, {...props})
