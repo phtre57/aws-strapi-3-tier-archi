@@ -15,13 +15,10 @@
     "test": "vitest run --config=../vitest.config.ts --pool forks --poolOptions.forks.singleFork",
     "test:watch": "vitest watch --config=../vitest.config.ts",
     "cdk": "cdk",
-    "diff:dev": "aws-vault exec hackathon -- cdk diff -c envName=dev",
+    "diff": "aws-vault exec hackathon -- cdk diff -c envName=dev",
     "synth": "cdk synth --quiet -c envName=dev -c analyze=Health",
-    "deploy:dev": "aws-vault exec hackathon -- cdk deploy '*' -c envName=dev --concurrency 8",
-    "deploy:dev:ci": "cdk deploy '*' -c envName=dev --require-approval never --concurrency 8",
-    "diff:prod": "aws-vault exec unicorne-monitoring-prod -- cdk diff -c envName=prod",
-    "deploy:prod": "aws-vault exec unicorne-monitoring-prod -- cdk deploy '*' -c envName=prod --concurrency 8",
-    "deploy:prod:ci": "cdk deploy '*' -c envName=prod --require-approval never --concurrency 8"
+    "deploy:": "aws-vault exec hackathon -- cdk deploy '*' -c envName=dev --concurrency 8",
+    "deploy:ci": "cdk deploy '*' -c envName=dev --require-approval never --concurrency 8"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.134",
