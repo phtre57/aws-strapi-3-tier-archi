@@ -1,0 +1,59 @@
+{
+  "name": "cdk",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "lint": "yarn lint:ts && yarn lint:eslint && yarn lint:prettier",
+    "lint:fix": "yarn lint:ts && yarn lint:eslint:fix && yarn lint:prettier:fix",
+    "lint:ts": "tsc --noEmit",
+    "lint:eslint": "eslint \"./**/*.ts\" --quiet",
+    "lint:eslint:fix": "eslint \"./**/*.ts\" --fix",
+    "lint:prettier": "prettier --check . --ignore-path .eslintignore",
+    "lint:prettier:fix": "prettier --write . --ignore-path .eslintignore",
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "vitest run --config=../vitest.config.ts --pool forks --poolOptions.forks.singleFork",
+    "test:watch": "vitest watch --config=../vitest.config.ts",
+    "cdk": "cdk",
+    "diff:dev": "aws-vault exec hackathon -- cdk diff -c envName=dev",
+    "synth": "cdk synth --quiet -c envName=dev -c analyze=Health",
+    "deploy:dev": "aws-vault exec hackathon -- cdk deploy '*' -c envName=dev --concurrency 8",
+    "deploy:dev:ci": "cdk deploy '*' -c envName=dev --require-approval never --concurrency 8",
+    "diff:prod": "aws-vault exec unicorne-monitoring-prod -- cdk diff -c envName=prod",
+    "deploy:prod": "aws-vault exec unicorne-monitoring-prod -- cdk deploy '*' -c envName=prod --concurrency 8",
+    "deploy:prod:ci": "cdk deploy '*' -c envName=prod --require-approval never --concurrency 8"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.134",
+    "@types/node": "^22.13.4",
+    "@types/uuid": "^10.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.24.1",
+    "@typescript-eslint/eslint-plugin-tslint": "^7.0.2",
+    "@typescript-eslint/parser": "^8.24.1",
+    "aws-cdk": "2.1000.2",
+    "esbuild": "^0.25.0",
+    "eslint": "^9.20.1",
+    "eslint-config-airbnb": "^19.0.4",
+    "eslint-config-airbnb-typescript": "^18.0.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-prettier": "^5.1.3",
+    "prettier": "^3.2.5",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "~5.7.3",
+    "vitest": "3.0.6"
+  },
+  "dependencies": {
+    "@lumigo/cdk-constructs-v2": "^0.1.148",
+    "aws-cdk-lib": "2.180.0",
+    "axios": "^1.6.7",
+    "constructs": "^10.3.0",
+    "source-map-support": "^0.5.21",
+    "uuid": "^11.1.0"
+  },
+  "volta": {
+    "node": "22.14.0",
+    "yarn": "1.22.22"
+  }
+}
