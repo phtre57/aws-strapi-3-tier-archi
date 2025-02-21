@@ -22,7 +22,7 @@ import { IBucket } from 'aws-cdk-lib/aws-s3'
 export interface ECSStackProps extends IBaseStackProps {
   serviceName: string;
   authorizedIPsForAdminAccess: string[];
-  certificate?: ICertificate;
+  certificate: ICertificate;
   dbSecurityGroup: ISecurityGroup;
   dbSecret: ISecret;
   ecr: awsEcr.IRepository;
@@ -102,7 +102,7 @@ export class ECSStack extends Stack {
             AWS_REGION: this.region,
           },
         },
-        // certificate,
+        certificate,
       },
     )
     imageAssetsBucket.grantReadWrite(loadBalancedService.taskDefinition.taskRole)
