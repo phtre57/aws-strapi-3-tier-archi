@@ -7,6 +7,7 @@ import { Network } from 'inspector/promises'
 import { NetworkStack } from '~/lib/network'
 import { enumFromStringValueOrThrow } from '~/lib/utils'
 import { IBaseStackProps } from '~/lib/utils/base-stack-props'
+import { DbStack } from '~/lib/data'
 
 const appName = 'Strapi3Tier'
 
@@ -34,3 +35,10 @@ const props: IBaseStackProps = {
 }
 
 const networkStack = new NetworkStack(app, `${appName}-NetworkStack`, {...props})
+
+const dbStack = new DbStack(app, `${appName}-DbStack`, {
+  ...props,
+  ...envConfig.db,
+  dbVpc: networkStack.databaseVpc,
+  computeVpc: networkStack.computeVpc,
+})

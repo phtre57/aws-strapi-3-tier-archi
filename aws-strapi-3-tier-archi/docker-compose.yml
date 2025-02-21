@@ -1,4 +1,4 @@
-version: "3"
+version: '3'
 services:
   strapi:
     container_name: strapi
@@ -23,7 +23,7 @@ services:
       - ./package-lock.json:/opt/package-lock.json # Replace with package-lock.json if using npm
       - ./.env:/opt/app/.env
     ports:
-      - "1337:1337"
+      - '1337:1337'
     networks:
       - strapi
     depends_on:
@@ -43,7 +43,7 @@ services:
       - strapi-data:/var/lib/postgresql/data/ #using a volume
       #- ./data:/var/lib/postgresql/data/ # if you want to use a bind folder
     ports:
-      - "5432:5432"
+      - '5432:5432'
     networks:
       - strapi
 
