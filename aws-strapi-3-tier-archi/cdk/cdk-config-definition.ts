@@ -16,6 +16,21 @@ export namespace Config {
       autoPause: cdk.Duration
       port: number
     }
+    ecs: {
+      image: {
+        tag: string
+      },
+      ips: {
+        admins: string[]
+      }
+    }
+    s3: {
+      removalPolicy: cdk.RemovalPolicy
+    }
+    ecr: {
+      name: string
+      removalPolicy: cdk.RemovalPolicy
+    }
   }
 
   export interface ICdkConfig {
