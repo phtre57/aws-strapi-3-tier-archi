@@ -5,8 +5,7 @@ import { IBaseStackProps } from '../utils/base-stack-props';
 import { IDbConnectionWithSecret } from '../utils';
 
 export type DbStackProps = IBaseStackProps & {
-  dbVpc: ec2.IVpc
-  computeVpc: ec2.IVpc
+  vpc: ec2.IVpc
   removalPolicy: cdk.RemovalPolicy
   minAcu: number
   maxAcu: number
@@ -23,26 +22,26 @@ export class DbStack extends cdk.Stack implements IDbConnectionWithSecret {
   constructor(scope: Construct, id: string, props: DbStackProps) {
     super(scope, id, props);
 
-    const { autoPause, dbVpc, computeVpc, removalPolicy, minAcu, maxAcu, port } = props
+    const { autoPause, vpc, removalPolicy, minAcu, maxAcu, port } = props
 
     this.port = port
 
     this.securityGroup = new ec2.SecurityGroup(this, 'DbSecurityGroup', {
-      vpc: dbVpc,
+      vpc,
     })
-    this.securityGroup.addIngressRule(ec2.Peer.ipv4(computeVpc.vpcCidrBlock), ec2.Port.tcp(port), 'Allow inbound traffic from VPC')
+    this.securityGroup.addIngressRule(ec2.Peer.ipv4(vpc.vpcCidrBlock), ec2.Port.tcp(port), 'Allow inbound traffic from VPC')
 
     // Create the Aurora Serverless cluster
     this.cluster = new rds.DatabaseCluster(this, 'AuroraServerlessCluster', {
       engine: rds.DatabaseClusterEngine.auroraPostgres({ version: rds.AuroraPostgresEngineVersion.VER_16_6 }),
-      vpc: dbVpc,
+      vpc,
       serverlessV2MinCapacity: minAcu,
       serverlessV2MaxCapacity: maxAcu,
       defaultDatabaseName: this.dbName,
       removalPolicy: removalPolicy,
       port: port,
       securityGroups: [this.securityGroup],
-      vpcSubnets: dbVpc.selectSubnets({ subnetType: ec2.SubnetType.PRIVATE_ISOLATED }),
+      vpcSubnets: vpc.selectSubnets({ subnetType: ec2.SubnetType.PRIVATE_ISOLATED }),
       writer: rds.ClusterInstance.serverlessV2(`${this.dbName}-Writer`),
     });
 

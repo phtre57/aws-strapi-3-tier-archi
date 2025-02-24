@@ -30,7 +30,7 @@ services:
       - strapiDB
 
   strapiDB:
-    image: postgres:17.3-alpine
+    image: postgres:16.6-alpine
     container_name: strapiDB
     platform: linux/amd64 #for platform error on Apple M1 chips
     restart: unless-stopped
@@ -40,7 +40,7 @@ services:
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
       POSTGRES_DB: ${DATABASE_NAME}
     volumes:
-      - strapi-data:/var/lib/postgresql/data/ #using a volume
+      - strapi-data:/var/lib/postgresql/data/ # using a volume
       #- ./data:/var/lib/postgresql/data/ # if you want to use a bind folder
     ports:
       - '5432:5432'

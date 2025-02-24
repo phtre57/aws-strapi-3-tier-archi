@@ -1,18 +1,16 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import * as tgw from 'aws-cdk-lib/aws-ec2';
 import { IBaseStackProps } from '../utils/base-stack-props';
 
 export class NetworkStack extends cdk.Stack {
-  public computeVpc: ec2.IVpc
-  public databaseVpc: ec2.IVpc
+  public vpc: ec2.IVpc
 
   constructor(scope: Construct, id: string, props: IBaseStackProps) {
     super(scope, id, props);
 
     // Create the compute VPC
-    this.computeVpc = new ec2.Vpc(this, 'ComputeVpc', {
+    this.vpc = new ec2.Vpc(this, 'Vpc', {
       ipAddresses: ec2.IpAddresses.cidr('10.0.0.0/24'),
       maxAzs: 3,
       natGateways: 0,
@@ -31,62 +29,9 @@ export class NetworkStack extends cdk.Stack {
         },
       ],
     });
-    // Create the database VPC
-    this.databaseVpc = new ec2.Vpc(this, 'DatabaseVpc', {
-      ipAddresses: ec2.IpAddresses.cidr('10.1.0.0/24'),
-      maxAzs: 3,
-      natGateways: 0,
-      subnetConfiguration: [
-        {
-          name: 'public-subnet',
-          subnetType: ec2.SubnetType.PUBLIC,
-        },
-        {
-          name: 'private-subnet',
-          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-        },
-        {
-          name: 'isolated-subnet',
-          subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
-        },
-      ],
-    });
-
-    // Create the Transit Gateway
-    const transitGateway = new tgw.CfnTransitGateway(this, 'TransitGateway');
-
-    // Attach the compute VPC to the Transit Gateway
-    const computeTgwAttachment = new tgw.CfnTransitGatewayAttachment(this, 'ComputeVpcAttachment', {
-      transitGatewayId: transitGateway.ref,
-      vpcId: this.computeVpc.vpcId,
-      subnetIds: this.computeVpc.privateSubnets.map((subnet) => subnet.subnetId),
-    });
-
-    // Attach the database VPC to the Transit Gateway
-    const dbTgwAttachment = new tgw.CfnTransitGatewayAttachment(this, 'DatabaseVpcAttachment', {
-      transitGatewayId: transitGateway.ref,
-      vpcId: this.databaseVpc.vpcId,
-      subnetIds: this.databaseVpc.privateSubnets.map((subnet) => subnet.subnetId),
-    });
-
-    this.computeVpc.publicSubnets.forEach((subnet, index) => {
-        new ec2.CfnRoute(this, `ComputeVpcRoute-${index}`, {
-          routeTableId: subnet.routeTable.routeTableId,
-          destinationCidrBlock: this.databaseVpc.vpcCidrBlock,
-          transitGatewayId: transitGateway.ref
-      }).node.addDependency(computeTgwAttachment);
-    })
-
-    this.databaseVpc.publicSubnets.forEach((subnet, index) => {
-      new ec2.CfnRoute(this, `DbVpcRoute-${index}`, {
-        routeTableId: subnet.routeTable.routeTableId,
-        destinationCidrBlock: this.computeVpc.vpcCidrBlock,
-        transitGatewayId: transitGateway.ref
-    }).node.addDependency(dbTgwAttachment);
-  })
 
     // Add VPC Endpoint for S3 to the compute VPC
-    this.computeVpc.addGatewayEndpoint('S3Endpoint', {
+    this.vpc.addGatewayEndpoint('S3Endpoint', {
       service: ec2.GatewayVpcEndpointAwsService.S3,
       subnets: [
         {
@@ -97,8 +42,7 @@ export class NetworkStack extends cdk.Stack {
 
 
     // Add Bastion Host to Compute VPC
-    this.createBastionHost(this, 'compute', this.computeVpc, ec2.SubnetType.PUBLIC);
-    this.createBastionHost(this, 'db', this.databaseVpc, ec2.SubnetType.PUBLIC);
+    this.createBastionHost(this, 'compute', this.vpc, ec2.SubnetType.PUBLIC);
   }
 
   private createBastionHost(scope: Construct, name: string, vpc: ec2.IVpc, subnetType: ec2.SubnetType): ec2.BastionHostLinux {

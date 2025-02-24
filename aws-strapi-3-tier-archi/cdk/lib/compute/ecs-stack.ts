@@ -90,6 +90,9 @@ export class ECSStack extends Stack {
       logRetention: logs.RetentionDays.TWO_YEARS,
     })
     task.addContainer('StrapiContainer', {
+      healthCheck: {
+        command: ["CMD-SHELL", "curl -f http://localhost:1337/_health || exit 1"]
+      },
       logging: logDriver,
       secrets: {
         DATABASE_USERNAME: ecsSecret.fromSecretsManager(dbSecret, 'username'),
@@ -126,15 +129,16 @@ export class ECSStack extends Stack {
         certificate,
       },
     )
-    imageAssetsBucket.grantReadWrite(loadBalancedService.taskDefinition.taskRole)
-
+    loadBalancedService.targetGroup.configureHealthCheck({
+      path: '/_health',
+      healthyHttpCodes: '200-299',
+    })
+    this.loadBalancer = loadBalancedService.loadBalancer
     this.connectable = loadBalancedService.service
 
-    // loadBalancedService.service.connections.allowTo(dbSecurityGroup, ec2.Port.tcp(db.port))
+    imageAssetsBucket.grantReadWrite(loadBalancedService.taskDefinition.taskRole)
 
     this.restrictAccessToAdmin(loadBalancedService, authorizedIPsForAdminAccess)
-
-    this.loadBalancer = loadBalancedService.loadBalancer
 
     new RedeployEcsServiceOnNewImagePushedToEcr(this, `auto-deploy-new-image-${serviceName}`, {
       ecr: ecr,
@@ -147,7 +151,7 @@ export class ECSStack extends Stack {
     loadBalancedService: ApplicationLoadBalancedFargateService,
     authorizedIPsForAdminAccess: string[],
   ) {
-    const conditions: ListenerCondition[] = [ListenerCondition.pathPatterns(['/admin/*'])]
+    const conditions: ListenerCondition[] = [ListenerCondition.pathPatterns(['/admin*'])]
     if (authorizedIPsForAdminAccess.length > 0) {
       conditions.push(ListenerCondition.sourceIps(authorizedIPsForAdminAccess))
     }
@@ -160,7 +164,7 @@ export class ECSStack extends Stack {
 
     loadBalancedService.listener.addAction('/forbidden', {
       priority: 20,
-      conditions: [ListenerCondition.pathPatterns(['/admin/*'])],
+      conditions: [ListenerCondition.pathPatterns(['/admin*'])],
       action: ListenerAction.fixedResponse(403, {
         contentType: 'text/html',
         messageBody: 'Not authorized',

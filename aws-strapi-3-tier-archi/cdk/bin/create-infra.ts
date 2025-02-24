@@ -55,13 +55,12 @@ const s3Stack = new S3Stack(app, `${appName}-S3Stack`, {
 const dbStack = new DbStack(app, `${appName}-DbStack`, {
   ...props,
   ...envConfig.db,
-  dbVpc: networkStack.databaseVpc,
-  computeVpc: networkStack.computeVpc,
+  vpc: networkStack.vpc,
 })
 
 const ecsStack = new ECSStack(app, `${appName}-EcsStack`, {
   ...props,
-  vpc: networkStack.computeVpc,
+  vpc: networkStack.vpc,
   serviceName: 'AwsStrapi3TierArchitecture',
   dbSecurityGroup: dbStack.securityGroup,
   dbSecret: dbStack.getDbSecret(),
@@ -73,7 +72,7 @@ const ecsStack = new ECSStack(app, `${appName}-EcsStack`, {
   certificate: certificatesStack.certificate,
 })
 
-// dbStack.addDbConnection(ecsStack.connectable, 'ECS Service')
+dbStack.addDbConnection(ecsStack.connectable, 'ECS Service')
 
 new Route53Stack(app, `${appName}-Route53Stack`, {
   ...props,
