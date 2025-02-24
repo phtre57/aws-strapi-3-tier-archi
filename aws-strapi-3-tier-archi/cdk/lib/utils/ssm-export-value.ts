@@ -17,6 +17,6 @@ export class SsmExportedValue extends Construct {
 
   public getValue(scope: Construct): string {
     scope.node.addDependency(this) // Force stacks dependency as no `Fn::ImportValue` will be generated
-    return ssm.StringParameter.valueForStringParameter(scope, this.parameterName)
+    return ssm.StringParameter.valueFromLookup(scope, this.parameterName)
   }
 }

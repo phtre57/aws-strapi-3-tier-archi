@@ -1,6 +1,6 @@
 import { aws_ecr as awsEcr, aws_logs as logs, aws_ec2 as ec2, Stack } from 'aws-cdk-lib'
 import { ICertificate } from 'aws-cdk-lib/aws-certificatemanager'
-import { ISecurityGroup, IVpc } from 'aws-cdk-lib/aws-ec2'
+import { ISecurityGroup } from 'aws-cdk-lib/aws-ec2'
 import {
   AwsLogDriver,
   Cluster,
@@ -18,7 +18,7 @@ import {
 } from 'aws-cdk-lib/aws-elasticloadbalancingv2'
 import { ISecret, Secret } from 'aws-cdk-lib/aws-secretsmanager'
 import { Construct } from 'constructs'
-import { IBaseStackProps } from '../utils'
+import { IBaseStackProps, SsmExportedValue } from '../utils'
 import { RedeployEcsServiceOnNewImagePushedToEcr } from '../utils/redeploy-ecs-service-on-new-image-pushed-to-ecr'
 import { IBucket } from 'aws-cdk-lib/aws-s3'
 
@@ -29,7 +29,7 @@ export interface ECSStackProps extends IBaseStackProps {
   dbSecurityGroup: ISecurityGroup;
   dbSecret: ISecret;
   ecr: awsEcr.IRepository;
-  vpc: IVpc;
+  vpcId: SsmExportedValue;
   ecs: {
     image: {
       tag: string;
@@ -54,7 +54,6 @@ export class ECSStack extends Stack {
 
     const {
       authorizedIPsForAdminAccess,
-      vpc,
       dbSecret,
       dbSecurityGroup,
       certificate,
@@ -63,7 +62,12 @@ export class ECSStack extends Stack {
       ecs,
       db,
       imageAssetsBucket,
+      vpcId
     } = props
+
+    const vpc = ec2.Vpc.fromLookup(this, 'Vpc', {
+      vpcId: vpcId.getValue(this),
+    })
 
     const strapiSecret = new Secret(this, 'StrapiSecret', {
       secretName: `${serviceName}-strapi-secret`,

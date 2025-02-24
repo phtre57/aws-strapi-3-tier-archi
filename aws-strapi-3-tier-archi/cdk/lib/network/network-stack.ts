@@ -2,9 +2,11 @@ import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import { IBaseStackProps } from '../utils/base-stack-props';
+import { SsmExportedValue } from '../utils';
 
 export class NetworkStack extends cdk.Stack {
   public vpc: ec2.IVpc
+  public vpcId: SsmExportedValue
 
   constructor(scope: Construct, id: string, props: IBaseStackProps) {
     super(scope, id, props);
@@ -29,6 +31,8 @@ export class NetworkStack extends cdk.Stack {
         },
       ],
     });
+
+    this.vpcId = new SsmExportedValue(this, 'vpc-id', this.vpc.vpcId);
 
     // Add VPC Endpoint for S3 to the compute VPC
     this.vpc.addGatewayEndpoint('S3Endpoint', {

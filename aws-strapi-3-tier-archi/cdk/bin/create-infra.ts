@@ -34,13 +34,13 @@ const props: IBaseStackProps = {
   envConfig: envConfig,
 }
 
+const networkStack = new NetworkStack(app, `${appName}-NetworkStack`, {...props})
+
 const certificatesStack = new CertificatesStack(app, `${appName}-CertificatesStack`, {
   ...props,
   domainName: `${envConfig.domain.sub}.${envConfig.domain.name}`,
   hostedZoneDomainName: envConfig.domain.name,
 })
-
-const networkStack = new NetworkStack(app, `${appName}-NetworkStack`, {...props})
 
 const ecrStack = new EcrStack(app, `${appName}-EcrStack`, {
   ...props,
@@ -55,12 +55,12 @@ const s3Stack = new S3Stack(app, `${appName}-S3Stack`, {
 const dbStack = new DbStack(app, `${appName}-DbStack`, {
   ...props,
   ...envConfig.db,
-  vpc: networkStack.vpc,
+  vpcId: networkStack.vpcId,
 })
 
 const ecsStack = new ECSStack(app, `${appName}-EcsStack`, {
   ...props,
-  vpc: networkStack.vpc,
+  vpcId: networkStack.vpcId,
   serviceName: 'AwsStrapi3TierArchitecture',
   dbSecurityGroup: dbStack.securityGroup,
   dbSecret: dbStack.getDbSecret(),

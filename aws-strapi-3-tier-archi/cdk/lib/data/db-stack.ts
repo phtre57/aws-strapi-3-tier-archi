@@ -2,10 +2,11 @@ import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { aws_rds as rds, aws_ec2 as ec2, aws_secretsmanager as secretsManager } from 'aws-cdk-lib';
 import { IBaseStackProps } from '../utils/base-stack-props';
-import { IDbConnectionWithSecret } from '../utils';
+import { IDbConnectionWithSecret, SsmExportedValue } from '../utils';
 
 export type DbStackProps = IBaseStackProps & {
-  vpc: ec2.IVpc
+  // vpc: ec2.IVpc
+  vpcId: SsmExportedValue
   removalPolicy: cdk.RemovalPolicy
   minAcu: number
   maxAcu: number
@@ -22,7 +23,11 @@ export class DbStack extends cdk.Stack implements IDbConnectionWithSecret {
   constructor(scope: Construct, id: string, props: DbStackProps) {
     super(scope, id, props);
 
-    const { autoPause, vpc, removalPolicy, minAcu, maxAcu, port } = props
+    const { autoPause, removalPolicy, minAcu, maxAcu, port } = props
+
+    const vpc = ec2.Vpc.fromLookup(this, 'Vpc', {
+      vpcId: props.vpcId.getValue(this),
+    })
 
     this.port = port
 
