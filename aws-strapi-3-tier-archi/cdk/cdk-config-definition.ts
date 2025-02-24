@@ -31,6 +31,10 @@ export namespace Config {
       name: string
       removalPolicy: cdk.RemovalPolicy
     }
+    domain: {
+      name: string,
+      sub: string,
+    }
   }
 
   export interface ICdkConfig {

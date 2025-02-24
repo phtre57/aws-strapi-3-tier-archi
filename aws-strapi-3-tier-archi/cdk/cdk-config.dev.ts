@@ -16,7 +16,7 @@ export const devConfig: Config.IEnvConfig = {
       tag: 'latest',
     },
     ips: {
-      admins: ['70.53.199.236']
+      admins: ['70.53.199.236/32']
     }
   },
   s3: {
@@ -25,5 +25,9 @@ export const devConfig: Config.IEnvConfig = {
   ecr: {
     name: 'aws-strapi-3-tier-archi-dev',
     removalPolicy: cdk.RemovalPolicy.DESTROY,
+  },
+  domain: {
+    name: 'unicornpowered.io',
+    sub: '3tierarchi',
   }
 }

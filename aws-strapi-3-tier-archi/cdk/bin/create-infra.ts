@@ -3,7 +3,7 @@ import 'source-map-support/register'
 import * as cdk from 'aws-cdk-lib'
 import { config } from '../cdk-config'
 import { Config } from '../cdk-config-definition'
-import { NetworkStack } from '~/lib/network'
+import { CertificatesStack, NetworkStack, Route53Stack } from '~/lib/network'
 import { enumFromStringValueOrThrow } from '~/lib/utils'
 import { IBaseStackProps } from '~/lib/utils/base-stack-props'
 import { DbStack, EcrStack, S3Stack } from '~/lib/data'
@@ -33,6 +33,12 @@ const props: IBaseStackProps = {
   region: region,
   envConfig: envConfig,
 }
+
+const certificatesStack = new CertificatesStack(app, `${appName}-CertificatesStack`, {
+  ...props,
+  domainName: `${envConfig.domain.sub}.${envConfig.domain.name}`,
+  hostedZoneDomainName: envConfig.domain.name,
+})
 
 const networkStack = new NetworkStack(app, `${appName}-NetworkStack`, {...props})
 
@@ -64,4 +70,14 @@ const ecsStack = new ECSStack(app, `${appName}-EcsStack`, {
   imageAssetsBucket: s3Stack.strapiImagesBucket,
   ecr: ecrStack.ecr,
   authorizedIPsForAdminAccess: envConfig.ecs.ips.admins,
+  certificate: certificatesStack.certificate,
+})
+
+// dbStack.addDbConnection(ecsStack.connectable, 'ECS Service')
+
+new Route53Stack(app, `${appName}-Route53Stack`, {
+  ...props,
+  applicationName: envConfig.domain.sub,
+  hostedZoneDomainName: envConfig.domain.name,
+  loadBalancer: ecsStack.loadBalancer,
 })
