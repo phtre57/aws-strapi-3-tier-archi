@@ -59,7 +59,6 @@ export class NetworkStack extends cdk.Stack {
     });
 
     // Add additional ingress rules
-    bastionSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(22));
     bastionSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.allIcmp());
 
     return new ec2.BastionHostLinux(scope, `${name}-BastionHost`, {
@@ -68,6 +67,15 @@ export class NetworkStack extends cdk.Stack {
       instanceType: new ec2.InstanceType('t4g.nano'),
       subnetSelection: vpc.selectSubnets({ subnetType: subnetType }),
       securityGroup: bastionSecurityGroup,
+      blockDevices: [
+        {
+          deviceName: '/dev/xvda',
+          volume: ec2.BlockDeviceVolume.ebs(8, {
+            encrypted: true,
+            volumeType: ec2.EbsDeviceVolumeType.GP3,
+          }),
+        },
+      ]
     });
   }
 }

@@ -36,47 +36,47 @@ const props: IBaseStackProps = {
 
 const networkStack = new NetworkStack(app, `${appName}-NetworkStack`, {...props})
 
-const certificatesStack = new CertificatesStack(app, `${appName}-CertificatesStack`, {
-  ...props,
-  domainName: `${envConfig.domain.sub}.${envConfig.domain.name}`,
-  hostedZoneDomainName: envConfig.domain.name,
-})
+// const certificatesStack = new CertificatesStack(app, `${appName}-CertificatesStack`, {
+//   ...props,
+//   domainName: `${envConfig.domain.sub}.${envConfig.domain.name}`,
+//   hostedZoneDomainName: envConfig.domain.name,
+// })
 
-const ecrStack = new EcrStack(app, `${appName}-EcrStack`, {
-  ...props,
-  ecr: envConfig.ecr,
-})
+// const ecrStack = new EcrStack(app, `${appName}-EcrStack`, {
+//   ...props,
+//   ecr: envConfig.ecr,
+// })
 
-const s3Stack = new S3Stack(app, `${appName}-S3Stack`, {
-  ...props,
-  s3: envConfig.s3,
-})
+// const s3Stack = new S3Stack(app, `${appName}-S3Stack`, {
+//   ...props,
+//   s3: envConfig.s3,
+// })
 
-const dbStack = new DbStack(app, `${appName}-DbStack`, {
-  ...props,
-  ...envConfig.db,
-  vpcId: networkStack.vpcId,
-})
+// const dbStack = new DbStack(app, `${appName}-DbStack`, {
+//   ...props,
+//   ...envConfig.db,
+//   vpcId: networkStack.vpcId,
+// })
 
-const ecsStack = new ECSStack(app, `${appName}-EcsStack`, {
-  ...props,
-  vpcId: networkStack.vpcId,
-  serviceName: 'AwsStrapi3TierArchitecture',
-  dbSecurityGroup: dbStack.securityGroup,
-  dbSecret: dbStack.getDbSecret(),
-  ecs: envConfig.ecs,
-  db: envConfig.db,
-  imageAssetsBucket: s3Stack.strapiImagesBucket,
-  ecr: ecrStack.ecr,
-  authorizedIPsForAdminAccess: envConfig.ecs.ips.admins,
-  certificate: certificatesStack.certificate,
-})
+// const ecsStack = new ECSStack(app, `${appName}-EcsStack`, {
+//   ...props,
+//   vpcId: networkStack.vpcId,
+//   serviceName: 'AwsStrapi3TierArchitecture',
+//   dbSecurityGroup: dbStack.securityGroup,
+//   dbSecret: dbStack.getDbSecret(),
+//   ecs: envConfig.ecs,
+//   db: envConfig.db,
+//   imageAssetsBucket: s3Stack.strapiImagesBucket,
+//   ecr: ecrStack.ecr,
+//   authorizedIPsForAdminAccess: envConfig.ecs.ips.admins,
+//   certificate: certificatesStack.certificate,
+// })
 
-dbStack.addDbConnection(ecsStack.connectable, 'ECS Service')
+// dbStack.addDbConnection(ecsStack.connectable, 'ECS Service')
 
-new Route53Stack(app, `${appName}-Route53Stack`, {
-  ...props,
-  applicationName: envConfig.domain.sub,
-  hostedZoneDomainName: envConfig.domain.name,
-  loadBalancer: ecsStack.loadBalancer,
-})
+// new Route53Stack(app, `${appName}-Route53Stack`, {
+//   ...props,
+//   applicationName: envConfig.domain.sub,
+//   hostedZoneDomainName: envConfig.domain.name,
+//   loadBalancer: ecsStack.loadBalancer,
+// })
